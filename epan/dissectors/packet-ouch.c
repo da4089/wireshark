@@ -748,7 +748,7 @@ dissect_ouch(
                                 ENC_BIG_ENDIAN);
             offset += 1;
 
-            if (reported_len == 49) { /* Added in 4.1 */
+            if (reported_len >= 49) { /* Added in 4.1 */
                 proto_tree_add_item(ouch_tree,
                                     hf_ouch_customer_type,
                                     tvb, offset, 1,
@@ -847,7 +847,7 @@ dissect_ouch(
                                 ENC_BIG_ENDIAN);
             offset += 1;
 
-            if (reported_len == 66) { /* Added in 4.2 */
+            if (reported_len >= 66) { /* Added in 4.2 */
                 proto_tree_add_item(ouch_tree,
                                     hf_ouch_bbo_weight_indicator,
                                     tvb, offset, 1,
@@ -1049,7 +1049,7 @@ dissect_ouch(
                                 ENC_ASCII|ENC_NA);
             offset += 14;
 
-            if (reported_len == 80) { /* Added in 4.2 */
+            if (reported_len >= 80) { /* Added in 4.2 */
                 proto_tree_add_item(ouch_tree,
                                     hf_ouch_bbo_weight_indicator,
                                     tvb, offset, 1,
