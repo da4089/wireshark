@@ -108,6 +108,9 @@ static const value_string ouch_cancel_reason_val[] = {
     { 'D', "Regulatory restriction" },
     { 'Q', "Self-match prevention" },
     { 'Z', "System cancel" },
+    { 'C', "Cross cancel" },
+    { 'E', "Closed" },
+    { 'X', "FIXME ???" },
     { 0, NULL }
 };
 
@@ -123,7 +126,7 @@ static const value_string ouch_cross_type_val[] = {
     { 'N', "No Cross" },
     { 'O', "Opening Cross" },
     { 'C', "Closing Cross" },
-    { 'I', "Intra-day Cross" },
+    { 'I', "Intra-day Cross" }, /* Seems to have been removed */
     { 'H', "Halt/IPO Cross" },
     { 'R', "Retail" }, /* Not in 4.0 */
     { 'S', "Supplemental Order" },
@@ -147,10 +150,12 @@ static const value_string ouch_display_val[] = {
     { 'O', "Retail Order Type 1" }, /* Not in 4.0 */
     { 'P', "Post-Only" },
     { 'Q', "Retail Price Improvement Order" }, /* Not in 4.0 */
-    { 'R', "Round-Lot Only" },
+    { 'R', "Round-Lot Only" }, /* Seems to have been removed? */
     { 'T', "Retail Order Type 2" }, /* Not in 4.0 */
     { 'W', "Mid-point Peg Post Only" },
     { 'Y', "Anonymous-Price to Comply" },
+    { 'Z', "Entered as displayed bu changed to non-displayed "
+           "(Priced to comply)" }, /* New in 4.2 */
     { 0, NULL}
 };
 
@@ -169,20 +174,21 @@ static const value_string ouch_iso_eligibility_val[] = {
 static const value_string ouch_liquidity_flag_val[] = {
     { 'A', "Added" },
     { 'R', "Removed" },
-    { 'O', "Opening Cross (billable)" },
-    { 'M', "Opening Cross (non-billable)" },
-    { 'C', "Closing Cross (billable)" },
-    { 'L', "Closing Cross (non-billable)" },
-    { 'H', "Halt/IPO Cross (billable)" },
-    { 'K', "Halt/IPO Cross (non-billable)" },
-    { 'I', "Intraday/Post-Market Cross" },
+    { 'O', "Opening Cross" },
+    { 'M', "Opening Cross (imbalance-only)" },
+    { 'C', "Closing Cross" },
+    { 'L', "Closing Cross (imbalance-only)" },
+    { 'H', "Halt/IPO Cross" },
+    { 'K', "Halt Cross" },
+    { 'I', "Intraday/Post-Market Cross" }, /* Seems to have been removed */
     { 'J', "Non-displayed adding liquidity" },
+    { 'W', "Added post-only" }, /* Removed 4.2 2013/02/05 */
     { 'm', "Removed liquidity at a midpoint" },
     { 'k', "Added liquidity via a midpoint order" },
     { '0', "Supplemental Order Execution" },
     { '7', "Displayed, liquidity-adding order improves the NBBO" },
     { '8', "Displayed, liquidity-adding order sets the QBBO while "
-      "joining the NBBO" },
+           "joining the NBBO" },
     /* Added in 4.1 */
     { 'd', "Retail designated execution that removed liquidity" },
     { 'e', "Retail designated execution that added displayed liquidity" },
@@ -191,7 +197,10 @@ static const value_string ouch_liquidity_flag_val[] = {
     { 'r', "Retail Order removes RPI liquidity" },
     { 't', "Retail Order removes price improving non-displayed liquidity "
       "other than RPI liquidity" },
-    { '6', "Liquidity Removing Order in designated securities" },
+    { '4', "Added displayed liquidity in a Select Symbol" },
+    { '5', "Added non-displayed liquidity in a Select Symbol" },
+    { '6', "Removed liquidity in a Select Symbol" },
+    { 'g', "Added non-displayed mid-point liquidity in a Select Symbol" },
     { 0, NULL }
 };
 
@@ -216,12 +225,14 @@ static const value_string ouch_reject_reason_val[] = {
     { 'S', "Invalid Stock" },
     { 'D', "Invalid Display Type" },
     { 'C', "NASDAQ is Closed" },
-    { 'L', "Requested firm not authorized for requested clearing type on this account" },
+    { 'L', "Requested firm not authorized for requested clearing "
+           "type on this account" },
     { 'M', "Outside of permitted times for requested clearing type" },
     { 'R', "This order is not allowed in this type of cross" },
     { 'X', "Invalid Price" },
     { 'N', "Invalid Minimum Quantity" },
     { 'O', "Other" },
+    { 'W', "Invalid Mid-point Post Only Price" },
     { 'a', "Reject All enabled" },
     { 'b', "Easy to Borrow (ETB) reject" },
     { 'c', "Restricted symbol list reject" },
