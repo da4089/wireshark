@@ -1272,6 +1272,37 @@ dissect_ouch(
             offset += 14;
             break;
 
+        case 'T': /* Order Priority Update (4.2 onwards) */
+            ouch_tree_add_timestamp(ouch_tree,
+                                    hf_ouch_timestamp,
+                                    tvb, offset);
+            offset += 8;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_order_token,
+                                tvb, offset, 14,
+                                ENC_ASCII|ENC_NA);
+            offset += 14;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_price,
+                                tvb, offset, 4,
+                                ENC_BIG_ENDIAN);
+            offset += 4;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_display,
+                                tvb, offset, 1,
+                                ENC_BIG_ENDIAN);
+            offset += 1;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_order_reference_number,
+                                tvb, offset, 8,
+                                ENC_BIG_ENDIAN);
+            offset += 8;
+            break;
+
         case 'm': /* Order Modified (4.2 onwards) */
             ouch_tree_add_timestamp(ouch_tree,
                                     hf_ouch_timestamp,
@@ -1421,6 +1452,12 @@ dissect_ouch_heur(
 
     case 'I': /* Cancel Reject */
         if (msg_len != 23) {
+            return FALSE;
+        }
+        break;
+
+    case 'T': /* Order Priority Update */
+        if (msg_len != 36) {
             return FALSE;
         }
         break;
