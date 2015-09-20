@@ -536,9 +536,13 @@ format_price(
     char *buf,
     guint32 value)
 {
-    g_snprintf(buf, ITEM_LABEL_LENGTH,
-               "$%u.%04u",
-               value / 10000, value % 10000);
+    if (value == 0x7fffffff) {
+        g_snprintf(buf, ITEM_LABEL_LENGTH, "%s", "Market");
+    } else {
+        g_snprintf(buf, ITEM_LABEL_LENGTH,
+                   "$%u.%04u",
+                   value / 10000, value % 10000);
+    }
 }
 
 /** BASE_CUSTOM formatter for price correction reason code
