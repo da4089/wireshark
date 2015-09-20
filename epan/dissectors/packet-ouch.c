@@ -1,6 +1,6 @@
 /* packet-ouch.c
  * Routines for OUCH 4.x protocol dissection
- * Copyright 2013 David Arnold <davida@pobox.com>
+ * Copyright 2013, 2015 David Arnold <d@0x1.org>
  *
  * Wireshark - Network traffic analyzer
  * By Gerald Combs <gerald@wireshark.org>
@@ -647,6 +647,14 @@ dissect_ouch(
         pkt_type = 'R';
     }
 
+    /* OUCH has two messages with the same code: Modify Order and
+     * Modified.  Again, one is sent by clients, the other sent by
+     * NASDAQ.  We change Modified to 'm' for simplicity in the
+     * switch. */
+    if (pkt_type == 'M' && reported_len == 28) {
+        pkt_type = 'm';
+    }
+
     /* Since we use the packet name a few times, get and save that value */
     pkt_name = val_to_str(pkt_type, pkt_type_val, "Unknown (%u)");
 
@@ -1264,6 +1272,31 @@ dissect_ouch(
             offset += 14;
             break;
 
+        case 'm': /* Order Modified (4.2 onwards) */
+            ouch_tree_add_timestamp(ouch_tree,
+                                    hf_ouch_timestamp,
+                                    tvb, offset);
+            offset += 8;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_order_token,
+                                tvb, offset, 14,
+                                ENC_ASCII|ENC_NA);
+            offset += 14;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_buy_sell_indicator,
+                                tvb, offset, 1,
+                                ENC_BIG_ENDIAN);
+            offset += 1;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_shares,
+                                tvb, offset, 4,
+                                ENC_BIG_ENDIAN);
+            offset += 4;
+            break;
+
         default:
             /* Unknown */
             proto_tree_add_item(tree,
@@ -1323,6 +1356,12 @@ dissect_ouch_heur(
 
     case 'X': /* Cancel order */
         if (msg_len != 19) {
+            return FALSE;
+        }
+        break;
+
+    case 'M': /* Modify Order or Order Modified (added 4.2) */
+        if (msg_len != 20 && msg_len != 28) {
             return FALSE;
         }
         break;
