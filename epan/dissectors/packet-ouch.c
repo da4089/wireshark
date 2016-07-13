@@ -64,6 +64,7 @@ static const value_string pkt_type_val[] = {
     { 'C', "Canceled" },
     { 'D', "AIQ Canceled" },
     { 'E', "Executed" },
+    { 'F', "Trade Correction" }, /* Added in 4.2, 29 Feb 2016 */
     { 'B', "Broken Trade" },
     { 'K', "Price Correction" },
     { 'J', "Rejected" },
@@ -218,6 +219,11 @@ static const value_string ouch_price_correction_reason_val[] = {
     { 0, NULL }
 };
 
+static const value_string ouch_trade_correction_reason_val[] = {
+    { 'N', "Adjusted to NAV" },
+    { 0, NULL }
+};
+
 static const value_string ouch_reject_reason_val[] = {
     { 'T', "Test Mode" },
     { 'H', "Halted" },
@@ -295,6 +301,7 @@ static int hf_ouch_shares = -1;
 static int hf_ouch_stock = -1;
 static int hf_ouch_tif = -1;
 static int hf_ouch_timestamp = -1;
+static int hf_ouch_trade_correction_reason = -1;
 
 
 /** Format an OUCH timestamp into a useful string
@@ -558,6 +565,23 @@ format_price_correction_reason(
                "%s (%c)",
                val_to_str_const(value,
                                 ouch_price_correction_reason_val,
+                                "Unknown"),
+               value);
+}
+
+/** BASE_CUSTOM formatter for the trade correction reason code
+ *
+ * Displays the code value as a character, not its ASCII value, as
+ * would be done by BASE_DEC and friends. */
+static void
+format_trade_correction_reason(
+    char *buf,
+    guint32 value)
+{
+    g_snprintf(buf, ITEM_LABEL_LENGTH,
+               "%s (%c)",
+               val_to_str_const(value,
+                                ouch_trade_correction_reason_val,
                                 "Unknown"),
                value);
 }
@@ -1196,6 +1220,49 @@ dissect_ouch(
             offset += 1;
             break;
 
+        case 'F': /* Trade Correction */
+            ouch_tree_add_timestamp(ouch_tree,
+                                    hf_ouch_timestamp,
+                                    tvb, offset);
+            offset += 8;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_order_token,
+                                tvb, offset, 14,
+                                ENC_ASCII|ENC_NA);
+            offset += 14;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_executed_shares,
+                                tvb, offset, 4,
+                                ENC_BIG_ENDIAN);
+            offset += 4;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_execution_price,
+                                tvb, offset, 4,
+                                ENC_BIG_ENDIAN);
+            offset += 4;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_liquidity_flag,
+                                tvb, offset, 1,
+                                ENC_BIG_ENDIAN);
+            offset += 1;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_match_number,
+                                tvb, offset, 8,
+                                ENC_BIG_ENDIAN);
+            offset += 8;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_trade_correction_reason,
+                                tvb, offset, 1,
+                                ENC_BIG_ENDIAN);
+            offset += 1;
+            break;
+
         case 'K': /* Price Correction */
             ouch_tree_add_timestamp(ouch_tree,
                                     hf_ouch_timestamp,
@@ -1651,6 +1718,11 @@ proto_register_ouch(void)
         { &hf_ouch_timestamp,
           { "Timestamp", "ouch.timestamp",
             FT_STRING, BASE_NONE, NULL, 0x0,
+            NULL, HFILL }},
+
+        { &hf_ouch_trade_correction_reason,
+          { "Trade Correction Reason", "ouch.trade_correction_reason",
+            FT_UINT8, BASE_CUSTOM, CF_FUNC(format_trade_correction_reason), 0x0,
             NULL, HFILL }}
     };
 
