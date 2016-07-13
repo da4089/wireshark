@@ -103,16 +103,18 @@ static const value_string ouch_buy_sell_indicator_val[] = {
 };
 
 static const value_string ouch_cancel_reason_val[] = {
-    { 'U', "User requested cancel" },
-    { 'I', "Immediate or Cancel order" },
-    { 'T', "Timeout" },
-    { 'S', "Supervisory" },
-    { 'D', "Regulatory restriction" },
-    { 'Q', "Self-match prevention" },
-    { 'Z', "System cancel" },
     { 'C', "Cross cancel" },
+    { 'D', "Regulatory restriction" },
     { 'E', "Closed" },
-    { 'X', "FIXME ???" },
+    { 'H', "Halted" },
+    { 'I', "Immediate or Cancel order" },
+    { 'K', "Market Collars" },
+    { 'Q', "Self-match prevention" },
+    { 'S', "Supervisory" },
+    { 'T', "Timeout" },
+    { 'U', "User requested cancel" },
+    { 'X', "Open Protection" },
+    { 'Z', "System cancel" },
     { 0, NULL }
 };
 
@@ -174,35 +176,39 @@ static const value_string ouch_iso_eligibility_val[] = {
 };
 
 static const value_string ouch_liquidity_flag_val[] = {
+    { '0', "Supplemental Order Execution" },
+    { '4', "Added displayed liquidity in a Group A Symbol" },
+    { '5', "Added non-displayed liquidity in a Group A Symbol" },
+    { '6', "Removed liquidity in a Group A Symbol" },
+    { '7', "Displayed, liquidity-adding order improves the NBBO" },
+    { '8', "Displayed, liquidity-adding order sets the QBBO while joining the NBBO" },
     { 'A', "Added" },
-    { 'R', "Removed" },
-    { 'O', "Opening Cross" },
-    { 'M', "Opening Cross (imbalance-only)" },
     { 'C', "Closing Cross" },
-    { 'L', "Closing Cross (imbalance-only)" },
     { 'H', "Halt/IPO Cross" },
-    { 'K', "Halt Cross" },
     { 'I', "Intraday/Post-Market Cross" }, /* Seems to have been removed */
     { 'J', "Non-displayed adding liquidity" },
+    { 'K', "Halt Cross" },
+    { 'L', "Closing Cross (imbalance-only)" },
+    { 'M', "Opening Cross (imbalance-only)" },
+    { 'N', "Halt Cross, orders entered in pilot symbols during the LULD Trading Pause" },
+    { 'O', "Opening Cross" },
+    { 'R', "Removed" },
     { 'W', "Added post-only" }, /* Removed 4.2 2013/02/05 */
-    { 'm', "Removed liquidity at a midpoint" },
-    { 'k', "Added liquidity via a midpoint order" },
-    { '0', "Supplemental Order Execution" },
-    { '7', "Displayed, liquidity-adding order improves the NBBO" },
-    { '8', "Displayed, liquidity-adding order sets the QBBO while "
-           "joining the NBBO" },
-    /* Added in 4.1 */
+    { 'a', "Added displayed liquidity in a SCIP Symbol" },
+    { 'b', "Displayed, liquidity-adding order improves the NBBO in pilot symbol during specified LULD Pricing Pilot timeframe" },
+    { 'c', "Added displayed liquidity in a pilot symbol during specified LULD Pricing Pilot timeframe" },
     { 'd', "Retail designated execution that removed liquidity" },
     { 'e', "Retail designated execution that added displayed liquidity" },
     { 'f', "Retail designated execution that added non-displayed liquidity" },
+    { 'g', "Added non-displayed mid-point liquidity in a Group A Symbol" },
+    { 'h', "Removed liquidity in a pilot symbol during specified LULD Pricing Pilot timeframe" },
     { 'j', "RPI (Retail Price Improving) order provides liquidity" },
+    { 'k', "Added liquidity via a midpoint order" },
+    { 'm', "Removed liquidity at a midpoint" },
     { 'r', "Retail Order removes RPI liquidity" },
-    { 't', "Retail Order removes price improving non-displayed liquidity "
-      "other than RPI liquidity" },
-    { '4', "Added displayed liquidity in a Select Symbol" },
-    { '5', "Added non-displayed liquidity in a Select Symbol" },
-    { '6', "Removed liquidity in a Select Symbol" },
-    { 'g', "Added non-displayed mid-point liquidity in a Select Symbol" },
+    { 't', "Retail Order removes price improving non-displayed liquidity other than RPI liquidity" },
+    { 'x', "Displayed, liquidity-adding order improves the NBBO in a SCIP Symbol" },
+    { 'y', "Displayed, liquidity-adding order set the QBBO while joining the NBBO in a SCIP Symbol" },
     { 0, NULL }
 };
 
