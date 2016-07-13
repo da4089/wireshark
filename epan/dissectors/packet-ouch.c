@@ -1,6 +1,6 @@
 /* packet-ouch.c
  * Routines for OUCH 4.x protocol dissection
- * Copyright 2013, 2015 David Arnold <d@0x1.org>
+ * Copyright (C) 2013, 2015, 2016 David Arnold <d@0x1.org>
  *
  * Wireshark - Network traffic analyzer
  * By Gerald Combs <gerald@wireshark.org>
@@ -57,14 +57,15 @@ static const value_string pkt_type_val[] = {
     { 'O', "Enter Order" },
     { 'U', "Replace Order" },
     { 'X', "Cancel Order" },
-    { 'M', "Modify Order" }, /* Not in 4.0 or 4.1 */
+    { 'M', "Modify Order" },
     { 'S', "System Event" },
     { 'A', "Accepted" },
     { 'R', "Replaced" }, /* 'U' on the wire, but use 'R' to disambiguate */
     { 'C', "Canceled" },
     { 'D', "AIQ Canceled" },
     { 'E', "Executed" },
-    { 'F', "Trade Correction" }, /* Added in 4.2, 29 Feb 2016 */
+    { 'F', "Trade Correction" },
+    { 'G', "Executed with Reference Price" },
     { 'B', "Broken Trade" },
     { 'K', "Price Correction" },
     { 'J', "Rejected" },
@@ -219,8 +220,8 @@ static const value_string ouch_price_correction_reason_val[] = {
     { 0, NULL }
 };
 
-static const value_string ouch_trade_correction_reason_val[] = {
-    { 'N', "Adjusted to NAV" },
+static const value_string ouch_reference_price_type_val[] = {
+    { 'I', "Intraday Indicative Value" },
     { 0, NULL }
 };
 
@@ -254,6 +255,11 @@ static const value_string ouch_reject_reason_val[] = {
     { 'm', "Exceeded shares limit" },
     { 'n', "Exceeded dollar value limit" },
     { 0, NULL}
+};
+
+static const value_string ouch_trade_correction_reason_val[] = {
+    { 'N', "Adjusted to NAV" },
+    { 0, NULL }
 };
 
 
@@ -295,6 +301,8 @@ static int hf_ouch_previous_order_token = -1;
 static int hf_ouch_price = -1;
 static int hf_ouch_price_correction_reason = -1;
 static int hf_ouch_quantity_prevented_from_trading = -1;
+static int hf_ouch_reference_price = -1;
+static int hf_ouch_reference_price_type = -1;
 static int hf_ouch_reject_reason = -1;
 static int hf_ouch_replacement_order_token = -1;
 static int hf_ouch_shares = -1;
@@ -569,19 +577,19 @@ format_price_correction_reason(
                value);
 }
 
-/** BASE_CUSTOM formatter for the trade correction reason code
+/** BASE_CUSTOM formatter for reference price type code
  *
  * Displays the code value as a character, not its ASCII value, as
  * would be done by BASE_DEC and friends. */
 static void
-format_trade_correction_reason(
+format_reference_price_type(
     char *buf,
     guint32 value)
 {
     g_snprintf(buf, ITEM_LABEL_LENGTH,
                "%s (%c)",
                val_to_str_const(value,
-                                ouch_trade_correction_reason_val,
+                                ouch_reference_price_type_val,
                                 "Unknown"),
                value);
 }
@@ -640,6 +648,23 @@ format_tif(
                    value);
         break;
     }
+}
+
+/** BASE_CUSTOM formatter for the trade correction reason code
+ *
+ * Displays the code value as a character, not its ASCII value, as
+ * would be done by BASE_DEC and friends. */
+static void
+format_trade_correction_reason(
+    char *buf,
+    guint32 value)
+{
+    g_snprintf(buf, ITEM_LABEL_LENGTH,
+               "%s (%c)",
+               val_to_str_const(value,
+                                ouch_trade_correction_reason_val,
+                                "Unknown"),
+               value);
 }
 
 
@@ -1220,7 +1245,7 @@ dissect_ouch(
             offset += 1;
             break;
 
-        case 'F': /* Trade Correction */
+        case 'F': /* Trade Correction (4.2 onwards) */
             ouch_tree_add_timestamp(ouch_tree,
                                     hf_ouch_timestamp,
                                     tvb, offset);
@@ -1258,6 +1283,55 @@ dissect_ouch(
 
             proto_tree_add_item(ouch_tree,
                                 hf_ouch_trade_correction_reason,
+                                tvb, offset, 1,
+                                ENC_BIG_ENDIAN);
+            offset += 1;
+            break;
+
+        case 'G': /* Executed with Reference Price (4.2 onwards) */
+            ouch_tree_add_timestamp(ouch_tree,
+                                    hf_ouch_timestamp,
+                                    tvb, offset);
+            offset += 8;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_order_token,
+                                tvb, offset, 14,
+                                ENC_ASCII|ENC_NA);
+            offset += 14;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_executed_shares,
+                                tvb, offset, 4,
+                                ENC_BIG_ENDIAN);
+            offset += 4;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_execution_price,
+                                tvb, offset, 4,
+                                ENC_BIG_ENDIAN);
+            offset += 4;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_liquidity_flag,
+                                tvb, offset, 1,
+                                ENC_BIG_ENDIAN);
+            offset += 1;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_match_number,
+                                tvb, offset, 8,
+                                ENC_BIG_ENDIAN);
+            offset += 8;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_reference_price,
+                                tvb, offset, 4,
+                                ENC_BIG_ENDIAN);
+            offset += 4;
+
+            proto_tree_add_item(ouch_tree,
+                                hf_ouch_reference_price_type,
                                 tvb, offset, 1,
                                 ENC_BIG_ENDIAN);
             offset += 1;
@@ -1688,6 +1762,16 @@ proto_register_ouch(void)
           { "Quantity Prevented from Trading",
             "ouch.quantity_prevented_from_trading",
             FT_UINT32, BASE_DEC, NULL, 0x0,
+            NULL, HFILL }},
+
+        { &hf_ouch_reference_price,
+          { "Reference Price", "ouch.reference_price",
+            FT_UINT32, BASE_CUSTOM, CF_FUNC(format_price), 0x0,
+            NULL, HFILL }},
+
+        { &hf_ouch_reference_price_type,
+          { "Reference Price Type", "ouch.reference_price_type",
+            FT_UINT32, BASE_CUSTOM, CF_FUNC(format_reference_price_type), 0x0,
             NULL, HFILL }},
 
         { &hf_ouch_reject_reason,
