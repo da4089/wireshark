@@ -71,6 +71,8 @@ static const value_string pkt_type_val[] = {
     { 'J', "Rejected" },
     { 'P', "Cancel Pending" },
     { 'I', "Cancel Reject" },
+    { 'T', "Order Priority Update" },
+    { 'm', "Order Modified" }, /* 'M' on the wire; 'm' to disambiguate */
     { 0, NULL }
 };
 
@@ -348,6 +350,22 @@ ouch_tree_add_timestamp(
     proto_tree_add_string(tree, hf, tvb, offset, 8, buf);
 }
 
+static void
+ouch_tree_add_packet_type(
+    proto_tree *tree,
+    const int hf,
+    tvbuff_t *tvb,
+    gint offset,
+    guint8 pkt_type)
+{
+    char *buf = (char *)wmem_alloc(wmem_packet_scope(), ITEM_LABEL_LENGTH);
+    guint8 raw_type = tvb_get_guint8(tvb, offset);
+    g_snprintf(buf, ITEM_LABEL_LENGTH,
+               "%s (%c)",
+               val_to_str_const(pkt_type, pkt_type_val, "Unknown"),
+               raw_type);
+    proto_tree_add_string(tree, hf, tvb, offset, 1, buf);
+}
 
 /** BASE_CUSTOM formatter for BBO weight indicator code
  *
@@ -533,21 +551,6 @@ format_order_state(
                value);
 }
 
-/** BASE_CUSTOM formatter for the packet type code
- *
- * Displays the code value as a character, not its ASCII value, as
- * would be done by BASE_DEC and friends. */
-static void
-format_packet_type(
-    char *buf,
-    guint32 value)
-{
-    g_snprintf(buf, ITEM_LABEL_LENGTH,
-               "%s (%c)",
-               val_to_str_const(value, pkt_type_val, "Unknown"),
-               value);
-}
-
 /** BASE_CUSTOM formatter for prices
  *
  * OUCH prices are integers, with four implicit decimal places.  So we
@@ -730,11 +733,10 @@ dissect_ouch(
         /* Append the packet name to the sub-tree item */
         proto_item_append_text(ti, ", %s", pkt_name);
 
-        /* Packet type (from the buffer, not the modified one we use
-         * for switching) */
-        proto_tree_add_item(ouch_tree,
-                            hf_ouch_packet_type,
-                            tvb, offset, 1, ENC_BIG_ENDIAN);
+        /* Packet type (using the cooked value). */
+        ouch_tree_add_packet_type(ouch_tree,
+                                  hf_ouch_packet_type,
+                                  tvb, offset, pkt_type);
         offset += 1;
 
         switch (pkt_type) {
@@ -1573,6 +1575,18 @@ dissect_ouch_heur(
         }
         break;
 
+    case 'F': /* Trade Correction */
+        if (msg_len != 41) {
+            return FALSE;
+        }
+        break;
+
+    case 'G': /* Executed with Reference Price */
+        if (msg_len != 45) {
+            return FALSE;
+        }
+        break;
+
     case 'B': /* Broken Trade */
         if (msg_len != 32) {
             return FALSE;
@@ -1746,7 +1760,7 @@ proto_register_ouch(void)
 
         { &hf_ouch_packet_type,
           { "Packet Type", "ouch.packet_type",
-            FT_UINT8, BASE_CUSTOM, CF_FUNC(format_packet_type), 0x0,
+            FT_STRING, BASE_NONE, NULL, 0x0,
             NULL, HFILL }},
 
         { &hf_ouch_previous_order_token,
